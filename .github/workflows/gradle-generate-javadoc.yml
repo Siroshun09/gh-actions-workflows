@@ -37,7 +37,7 @@ jobs:
         uses: gradle/wrapper-validation-action@v1.0.4
       - run: chmod +x ./gradlew
       - name: Generate Javadoc
-        uses: gradle/gradle-build-action@v2.1.4
+        uses: gradle/gradle-build-action@v2.1.5
         with:
           arguments: ${{ inputs.gradle-arguments }}
       - name: Upload artifacts
