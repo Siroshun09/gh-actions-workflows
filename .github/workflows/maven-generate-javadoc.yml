@@ -1,0 +1,42 @@
+name: Generate Javadoc (Maven)
+on:
+  workflow_call:
+    inputs:
+      java-version: # see https://github.com/actions/setup-java#supported-version-syntax
+        required: true
+        type: string
+      distribution: # see https://github.com/actions/setup-java#supported-distributions
+        required: false
+        type: string
+        default: "temurin"
+      maven-arguments:
+        required: false
+        type: string
+        default: "javadoc::javadoc"
+      artifact-name:
+        required: false
+        type: string
+        default: "Javadoc"
+      javadoc-directory:
+        required: false
+        type: string
+        default: "./target/site/apidocs"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3.0.0
+      - name: Set up JDK ${{ inputs.java-version }}
+        uses: actions/setup-java@v3.0.0
+        with:
+          java-version: ${{ inputs.java-version }}
+          distribution: ${{ inputs.distribution }}
+          cache: 'maven'
+      - name: Generate Javadoc
+        run: mvn -B --file pom.xml -Djava.version=${{ inputs.java-version }} ${{ inputs.maven-arguments }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3.0.0
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ${{ inputs.javadoc-directory }}
