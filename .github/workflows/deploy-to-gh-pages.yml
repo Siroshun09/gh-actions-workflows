@@ -12,6 +12,10 @@ on:
         required: false
         type: string
         default: "gh-pages"
+      update-latest:
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   docs:
@@ -23,6 +27,10 @@ jobs:
         with:
           name: ${{ inputs.artifact-name }}
           path: staging/${{ inputs.project-version }}
+      - name: Copy to latest
+        if: ${{ inputs.update-latest }}
+        run: |
+          cp -r staging/${{ inputs.project-version }} staging/latest
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4.4.0
         with:
