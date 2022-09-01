@@ -13,6 +13,14 @@ on:
         required: false
         type: string
         default: "build"
+      build-arguments:
+        required: false
+        type: string
+        default: "build"
+      package-name:
+        required: false
+        type: string
+        default: "Package"
 
 jobs:
   build:
@@ -24,17 +32,17 @@ jobs:
         with:
           java-version: ${{ inputs.java-version }}
           distribution: ${{ inputs.distribution }}
-          cache: 'gradle'
       - name: Validate Gradle wrapper
         uses: gradle/wrapper-validation-action@v1.0.4
       - run: chmod +x ./gradlew
       - name: Build with Gradle
         uses: gradle/gradle-build-action@v2.3.0
         with:
-          arguments: build
+          arguments: ${{ inputs.build-arguments }}
+          cache-read-only: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' && github.ref != 'refs/heads/develop' }}
       - name: Upload artifacts
         uses: actions/upload-artifact@v3.1.0
         continue-on-error: true
         with:
-          name: Package-Java-${{ inputs.java-version }}
+          name: ${{ inputs.package-name }}-Java-${{ inputs.java-version }}
           path: ${{ inputs.artifact-directory }}
