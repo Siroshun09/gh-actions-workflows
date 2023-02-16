@@ -21,6 +21,10 @@ on:
         required: false
         type: string
         default: "./build/docs"
+      upload-artifacts:
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   build:
@@ -41,6 +45,7 @@ jobs:
         with:
           arguments: ${{ inputs.gradle-arguments }}
       - name: Upload artifacts
+        if: ${{ inputs.upload-artifacts }}
         uses: actions/upload-artifact@v3.1.2
         with:
           name: ${{ inputs.artifact-name }}
