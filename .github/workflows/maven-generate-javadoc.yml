@@ -36,7 +36,6 @@ jobs:
         with:
           java-version: ${{ inputs.java-version }}
           distribution: ${{ inputs.distribution }}
-          cache: 'maven'
       - name: Generate Javadoc
         run: mvn -B --file pom.xml -Djava.version=${{ inputs.java-version }} ${{ inputs.maven-arguments }}
       - name: Upload artifacts
