@@ -48,7 +48,7 @@ jobs:
           java-version: ${{ inputs.java-version }}
           distribution: ${{ inputs.distribution }}
       - name: Validate Gradle wrapper
-        uses: gradle/wrapper-validation-action@v2.1.0
+        uses: gradle/wrapper-validation-action@v2.1.1
       - run: chmod +x ./gradlew
       - name: Generate Javadoc
         uses: gradle/gradle-build-action@v2.12.0
