@@ -51,7 +51,7 @@ jobs:
         uses: gradle/wrapper-validation-action@v2.1.1
       - run: chmod +x ./gradlew
       - name: Generate Javadoc
-        uses: gradle/gradle-build-action@v2.12.0
+        uses: gradle/gradle-build-action@v3.1.0
         with:
           arguments: ${{ inputs.gradle-arguments }}
           cache-disabled: ${{ inputs.cache-disabled }}
