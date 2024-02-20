@@ -60,7 +60,7 @@ jobs:
           ./gradlew ${{ inputs.build-arguments }}
       - name: Upload artifacts
         if: ${{ inputs.upload-artifacts }}
-        uses: actions/upload-artifact@v3.1.2
+        uses: actions/upload-artifact@v4.3.1
         with:
           name: ${{ inputs.artifact-name }}
           path: ${{ inputs.javadoc-directory }}
