@@ -57,7 +57,7 @@ jobs:
       - name: Build with Gradle
         run: |
           chmod +x ./gradlew
-          ./gradlew ${{ inputs.build-arguments }}
+          ./gradlew ${{ inputs.gradle-arguments }}
       - name: Upload artifacts
         if: ${{ inputs.upload-artifacts }}
         uses: actions/upload-artifact@v4.3.1
