@@ -32,7 +32,7 @@ on:
       test-result-paths:
         required: false
         type: string
-        default: "**/target/surefire-results/test/TEST-*.xml"
+        default: "**/target/surefire-reports/test/TEST-*.xml"
 
 jobs:
   build:
