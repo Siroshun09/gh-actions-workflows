@@ -71,6 +71,7 @@ jobs:
         if: ${{ inputs.upload-test-results }} && (success() || failure())
         with:
           report_paths: ${{ inputs.test-result-paths }}
+          check_name: JUnit Test Report (Java ${{ inputs.java-version }})
       - name: Upload artifacts
         if: ${{ inputs.upload-artifacts }}
         uses: actions/upload-artifact@v4.3.1
