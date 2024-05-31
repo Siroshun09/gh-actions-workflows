@@ -33,12 +33,17 @@ on:
         required: false
         type: string
         default: "**/target/surefire-reports/TEST-*.xml"
+      working-dir:
+        required: false
+        type: string
+        default: "."
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.6
+      - run: cd ${{ inputs.working-dir }}
       - name: Set up JDK ${{ inputs.java-version }}
         uses: actions/setup-java@v4.2.1
         with:
