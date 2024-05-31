@@ -35,13 +35,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.6
-      - run: cd ${{ inputs.working-dir }}
       - name: Set up JDK ${{ inputs.java-version }}
         uses: actions/setup-java@v4.2.1
         with:
           java-version: ${{ inputs.java-version }}
           distribution: ${{ inputs.distribution }}
       - name: Generate Javadoc
+        working-directory: ${{ inputs.working-dir }}
         run: mvn -B --file pom.xml -Djava.version=${{ inputs.java-version }} ${{ inputs.maven-arguments }}
       - name: Upload artifacts
         if: ${{ inputs.upload-artifacts }}

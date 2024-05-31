@@ -46,7 +46,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.6
-      - run: cd ${{ inputs.working-dir }}
       - name: Set up JDK ${{ inputs.java-version }}
         uses: actions/setup-java@v4.2.1
         with:
@@ -60,6 +59,7 @@ jobs:
           cache-disabled: ${{ inputs.cache-disabled }}
           cache-read-only: ${{ !contains(inputs.caching-refs, github.ref) }}
       - name: Build with Gradle
+        working-directory: ${{ inputs.working-dir }}
         run: |
           chmod +x ./gradlew
           ./gradlew ${{ inputs.gradle-arguments }}
