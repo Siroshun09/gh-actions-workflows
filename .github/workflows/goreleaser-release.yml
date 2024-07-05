@@ -2,6 +2,14 @@ name: Go Release
 on:
   workflow_call:
     inputs:
+      go-version-file:
+        type: string
+        required: false
+        default: "go.mod"
+      go-enable-cache:
+        type: boolean
+        required: false
+        default: true
       goreleaser-distribution:
         type: string
         required: false
@@ -30,8 +38,8 @@ jobs:
       - name: "Set up Go"
         uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         with:
-          go-version-file: go.mod
-          cache: true
+          go-version-file: ${{ inputs.go-version-file }}
+          cache: ${{ inputs.go-enable-cache }}
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@286f3b13b1b49da4ac219696163fb8c1c93e1200 # v6.0.0
         with:
