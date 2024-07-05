@@ -1,0 +1,42 @@
+name: Go Release
+on:
+  workflow_call:
+    inputs:
+      goreleaser-distribution:
+        type: string
+        required: false
+        default: "goreleaser"
+      goreleaser-version:
+        type: string
+        required: false
+        default: "latest"
+      goreleaser-args:
+        type: string
+        required: false
+        default: "release --clean"
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          fetch-depth: 0
+      - name: Fetch all tags
+        run: git fetch --force --tags
+      - name: "Set up Go"
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@286f3b13b1b49da4ac219696163fb8c1c93e1200 # v6.0.0
+        with:
+          distribution: ${{ inputs.goreleaser-distribution }}
+          version: ${{ inputs.goreleaser-version }}
+          args: ${{ inputs.goreleaser-args }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
