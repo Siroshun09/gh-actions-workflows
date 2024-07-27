@@ -1,0 +1,69 @@
+name: Go Build
+on:
+  workflow_call:
+    inputs:
+      os:
+        type: string
+        required: false
+        default: "ubuntu-latest"
+      enable-cache:
+        type: boolean
+        required: false
+        default: true
+      build-arguments:
+        type: string
+        required: false
+        default: "build"
+      run-test:
+        type: boolean
+        required: false
+        default: true
+      test-arguments:
+        type: string
+        required: false
+        default: "test -v ./..."
+      dist-directory:
+        type: string
+        required: false
+        default: "dist"
+      package-name:
+        required: false
+        type: string
+        default: "Package"
+      upload-artifacts:
+        required: false
+        type: boolean
+        default: true
+      working-dir:
+        required: false
+        type: string
+        default: "."
+
+jobs:
+  build:
+    runs-on: ${{ inputs.os }}
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - name: "Set up Go"
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
+        with:
+          go-version-file: ${{ inputs.working-dir }}/go.mod
+          cache: ${{ inputs.enable-cache }}
+          cache-dependency-path: |
+            ${{ inputs.working-dir }}/go.sum
+      - name: "Build"
+        working-directory: ${{ inputs.working-dir }}
+        run: |
+          go ${{ inputs.build-arguments }} -o ${{ inputs.dist-directory }}
+      - name: "Test"
+        if: ${{ inputs.run-test }}
+        working-directory: ${{ inputs.working-dir }}
+        run: |
+          go ${{ inputs.test-arguments }}
+      - name: "Upload artifacts"
+        if: ${{ inputs.upload-artifacts }}
+        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
+        continue-on-error: true
+        with:
+          name: ${{ inputs.package-name }}-${{ env.RUNNER_OS }}-${{ env.RUNNER_ARCH }}
+          path: ${{ inputs.working-dir }}/${{ inputs.dist-directory }}
