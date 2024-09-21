@@ -36,7 +36,13 @@ jobs:
           cache-dependency-path: |
             ${{ inputs.working-dir }}/go.sum
       - name: "Test"
-        if: ${{ !inputs.upload-results }}
         working-directory: ${{ inputs.working-dir }}
         run: |
-          go run gotest.tools/gotestsum@v1.12.0 --junitfile test-result.xml ${{ inputs.additional-arguments }}
+          go run gotest.tools/gotestsum@v1.12.0 --junitfile ~/test-results.xml ${{ inputs.additional-arguments }}
+      - name: "Upload Results"
+        uses: mikepenz/action-junit-report@db71d41eb79864e25ab0337e395c352e84523afe # v4.3.1
+        if: ${{ inputs.upload-result && (success() || failure()) }}
+        continue-on-error: true
+        with:
+          report_paths: ~/test-results.xml
+          check_name: Test Report
