@@ -23,9 +23,6 @@ on:
         type: string
         default: "."
 
-permissions:
-  checks: write
-
 jobs:
   build:
     runs-on: ${{ inputs.os }}
