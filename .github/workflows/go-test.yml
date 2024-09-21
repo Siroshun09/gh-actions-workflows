@@ -1,0 +1,42 @@
+name: Go Build
+on:
+  workflow_call:
+    inputs:
+      os:
+        type: string
+        required: false
+        default: "ubuntu-latest"
+      enable-cache:
+        type: boolean
+        required: false
+        default: true
+      additional-arguments:
+        type: string
+        required: false
+        default: ""
+      upload-results:
+        required: false
+        type: boolean
+        default: false
+      working-dir:
+        required: false
+        type: string
+        default: "."
+
+jobs:
+  build:
+    runs-on: ${{ inputs.os }}
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - name: "Set up Go"
+        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+        with:
+          go-version-file: ${{ inputs.working-dir }}/go.mod
+          cache: ${{ inputs.enable-cache }}
+          cache-dependency-path: |
+            ${{ inputs.working-dir }}/go.sum
+      - name: "Test"
+        if: ${{ !inputs.upload-results }}
+        working-directory: ${{ inputs.working-dir }}
+        run: |
+          go run gotest.tools/gotestsum@v1.12.0 --junitfile test-result.xml ${{ inputs.additional-arguments }}
