@@ -22,6 +22,9 @@ on:
         required: false
         type: string
         default: "."
+      go-version:
+        required: false
+        type: string
 
 jobs:
   build:
@@ -31,6 +34,7 @@ jobs:
       - name: "Set up Go"
         uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
+          go-version: ${{ inputs.go-version }}
           go-version-file: ${{ inputs.working-dir }}/go.mod
           cache: ${{ inputs.enable-cache }}
           cache-dependency-path: |
