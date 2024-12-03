@@ -44,7 +44,7 @@ jobs:
         run: |
           go run gotest.tools/gotestsum@v1.12.0 --junitfile ~/test-results.xml ${{ inputs.additional-arguments }}
       - name: "Upload Results"
-        uses: mikepenz/action-junit-report@a427a90771729d8f85b6ab0cdaa1a5929cab985d # v5.0.0
+        uses: mikepenz/action-junit-report@992d97d6eb2e5f3de985fbf9df6a04386874114d # v5.1.0
         if: ${{ inputs.upload-results && (success() || failure()) }}
         continue-on-error: true
         with:
