@@ -1,0 +1,46 @@
+name: Go Lint
+on:
+  workflow_call:
+    inputs:
+      os:
+        type: string
+        required: false
+        default: "ubuntu-latest"
+      go-version:
+        required: false
+        type: string
+      golangci-lint-version:
+        required: true
+        type: string
+      enable-cache:
+        type: boolean
+        required: false
+        default: true
+      additional-arguments:
+        type: string
+        required: false
+        default: ""
+      working-dir:
+        required: false
+        type: string
+        default: "."
+
+jobs:
+  build:
+    runs-on: ${{ inputs.os }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: "Set up Go"
+        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
+        with:
+          go-version: ${{ inputs.go-version }}
+          go-version-file: ${{ inputs.working-dir }}/go.mod
+          cache: ${{ inputs.enable-cache }}
+          cache-dependency-path: |
+            ${{ inputs.working-dir }}/go.sum
+      - name: "Lint"
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: ${{ inputs.golangci-lint-version }}
+          working-directory: ${{ inputs.working-dir }}
+          args: ${{ inputs.additional-arguments }}
