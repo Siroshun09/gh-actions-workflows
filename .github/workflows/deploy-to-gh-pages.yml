@@ -39,7 +39,9 @@ jobs:
         run: cp -r source staging/${{ inputs.project-version }}
       - name: Copy to latest
         if: ${{ inputs.update-latest }}
-        run: cp -r source staging/latest
+        run: |
+          rm -rf staging/latest
+          cp -r source staging/latest
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@6c2d9db40f9296374acc17b90404b6e8864128c8 # v4.7.3
         with:
