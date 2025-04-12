@@ -10,3 +10,4 @@ jobs:
         with:
           reporter: github-check
           fail_level: warning
+          filter_mode: nofilter
