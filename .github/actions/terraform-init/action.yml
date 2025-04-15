@@ -1,0 +1,25 @@
+name: "Initialize Terraform"
+
+inputs:
+  working-directory:
+    required: true
+  run-format-check-and-validate:
+    required: false
+    default: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Format Check
+      if: ${{ inputs.run-format-check-and-validate }}
+      working-directory: ${{ inputs.working-directory }}
+      run: terraform fmt -check
+
+    - name: Init
+      working-directory: ${{ inputs.working-directory }}
+      run: terraform init -input=false
+
+    - name: Validate
+      if: ${{ inputs.run-format-check-and-validate }}
+      working-directory: ${{ inputs.working-directory }}
+      run: terraform validate -no-color

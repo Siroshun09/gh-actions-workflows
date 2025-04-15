@@ -1,0 +1,23 @@
+name: "Terraform Plan Preview"
+
+inputs:
+  plan-stdout:
+    require: true
+  plan-outcome:
+    require: true
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const output = `#### Terraform Plan 📖\`${{ inputs.plan-outcome }}\`
+          
+          \`\`\`\n
+          ${{ inputs.plan-stdout }}
+          \`\`\`
+          `;
+
+          await core.summary.addRaw(output).write();
