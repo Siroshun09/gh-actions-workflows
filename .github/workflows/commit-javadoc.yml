@@ -1,0 +1,42 @@
+name: Commit Javadoc to the branch
+
+on:
+  workflow_call:
+    inputs:
+      project-version:
+        required: true
+        type: string
+      artifact-name:
+        required: true
+        type: string
+      target-branch-name:
+        required: false
+        type: string
+        default: "javadocs"
+
+jobs:
+  commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Download Artifact
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: source
+
+      - name: Create staging directory
+        run: mkdir staging
+
+      - name: Copy to versioned page
+        run: cp -r source staging/${{ inputs.project-version }}
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@6c2d9db40f9296374acc17b90404b6e8864128c8 # v4.7.3
+        with:
+          branch: ${{ inputs.target-branch-name }}
+          folder: staging
+          token: ${{ secrets.GITHUB_TOKEN }}
+          clean: false
