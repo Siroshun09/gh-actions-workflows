@@ -42,7 +42,7 @@ jobs:
       - name: "Test"
         working-directory: ${{ inputs.working-dir }}
         run: |
-          go run gotest.tools/gotestsum@v1.12.0 --junitfile ~/test-results.xml ${{ inputs.additional-arguments }}
+          go run gotest.tools/gotestsum@v1.12.3 --junitfile ~/test-results.xml ${{ inputs.additional-arguments }}
       - name: "Upload Results"
         uses: mikepenz/action-junit-report@3585e9575db828022551b4231f165eb59a0e74e3 # v5.6.2
         if: ${{ inputs.upload-results && (success() || failure()) }}
