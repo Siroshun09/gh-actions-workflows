@@ -25,6 +25,10 @@ on:
       go-version:
         required: false
         type: string
+      gotestsum-version:
+        required: false
+        type: string
+        default: "1.13.0"
 
 jobs:
   build:
@@ -39,14 +43,41 @@ jobs:
           cache: ${{ inputs.enable-cache }}
           cache-dependency-path: |
             ${{ inputs.working-dir }}/go.sum
+      - name: "Download gotestsum"
+        id: download-gotestsum
+        run: |
+          GOTESTSUM_DIR="$RUNNER_TEMP/gotestsum"
+          GOTESTSUM_BIN_DIR="$GOTESTSUM_DIR/bin"
+          GOTESTSUM_BIN="$GOTESTSUM_BIN_DIR/gotestsum"
+          GOTESTSUM_DOWNLOAD_NAME="gotestsum_${{ inputs.gotestsum-version }}_linux_amd64.tar.gz"
+
+          mkdir -p "$GOTESTSUM_BIN_DIR"
+
+          gh release download v${{ inputs.gotestsum-version }} \
+            --repo gotestyourself/gotestsum \
+            --pattern "$GOTESTSUM_DOWNLOAD_NAME" \
+            --dir "$GOTESTSUM_DIR"
+
+          tar -xzf "$GOTESTSUM_DIR/$GOTESTSUM_DOWNLOAD_NAME" -C "$GOTESTSUM_BIN_DIR"
+          chmod +x "$GOTESTSUM_BIN"
+          echo "bin=$GOTESTSUM_BIN" > "$GITHUB_OUTPUT"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: "Test"
+        id: test
         working-directory: ${{ inputs.working-dir }}
         run: |
-          go run gotest.tools/gotestsum@v1.12.3 --junitfile ~/test-results.xml ${{ inputs.additional-arguments }}
+          JUNIT_REPORT_DIR="$RUNNER_TEMP/junit-reports"
+          JUNIT_REPORT_FILE="$JUNIT_REPORT_DIR/test-results.xml"
+          mkdir "$JUNIT_REPORT_DIR"
+
+          "${{ steps.download-gotestsum.outputs.bin }}" --junitfile "$JUNIT_REPORT_FILE" ${{ inputs.additional-arguments }}
+
+          echo "result-filepath=$JUNIT_REPORT_FILE" > "$GITHUB_OUTPUT"
       - name: "Upload Results"
         uses: mikepenz/action-junit-report@e08919a3b1fb83a78393dfb775a9c37f17d8eea6 # v6.0.1
         if: ${{ inputs.upload-results && (success() || failure()) }}
         continue-on-error: true
         with:
-          report_paths: ~/test-results.xml
+          report_paths: ${{ steps.test.outputs.result-filepath }}
           check_name: Test Report
