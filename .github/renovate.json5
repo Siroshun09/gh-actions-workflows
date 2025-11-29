@@ -1,23 +1,6 @@
 {
   $schema: 'https://docs.renovatebot.com/renovate-schema.json',
   extends: [
-    'config:recommended',
-    'helpers:pinGitHubActionDigests',
-  ],
-  baseBranches: [
-    'v1',
-  ],
-  packageRules: [
-    {
-      groupName: 'all non-major dependencies',
-      groupSlug: 'all-minor-patch',
-      matchUpdateTypes: [
-        'minor',
-        'patch',
-      ],
-      matchPackageNames: [
-        '*',
-      ],
-    },
-  ],
+    'github>Siroshun09/renovate-config//github-actions/renovate.json5',
+  ]
 }
