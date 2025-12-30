@@ -17,14 +17,6 @@ on:
       go-filepath:
         type: string
         required: true
-      run-test:
-        type: boolean
-        required: false
-        default: true
-      test-arguments:
-        type: string
-        required: false
-        default: "test -v ./..."
       output-filepath:
         type: string
         required: true
@@ -58,11 +50,6 @@ jobs:
         working-directory: ${{ inputs.working-dir }}
         run: |
           go ${{ inputs.build-arguments }} -o ${{ inputs.output-filepath }} ${{ inputs.go-filepath }}
-      - name: "Test"
-        if: ${{ inputs.run-test }}
-        working-directory: ${{ inputs.working-dir }}
-        run: |
-          go ${{ inputs.test-arguments }}
       - name: "Upload artifacts"
         if: ${{ inputs.upload-artifacts }}
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
