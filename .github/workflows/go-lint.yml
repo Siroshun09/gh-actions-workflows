@@ -29,15 +29,12 @@ jobs:
   build:
     runs-on: ${{ inputs.os }}
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
-      - name: "Set up Go"
-        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+      - uses: Siroshun09/gh-actions-workflows/.github/actions/checkout@v1
+      - uses: Siroshun09/gh-actions-workflows/.github/actions/go-setup@v1
         with:
+          enable-cache: ${{ inputs.enable-cache }}
           go-version: ${{ inputs.go-version }}
-          go-version-file: ${{ inputs.working-dir }}/go.mod
-          cache: ${{ inputs.enable-cache }}
-          cache-dependency-path: |
-            ${{ inputs.working-dir }}/go.sum
+          working-dir: ${{ inputs.working-dir }}
       - name: "Lint"
         uses: golangci/golangci-lint-action@e7fa5ac41e1cf5b7d48e45e42232ce7ada589601 # v9.1.0
         with:

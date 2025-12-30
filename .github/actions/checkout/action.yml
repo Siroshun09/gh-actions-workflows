@@ -1,4 +1,5 @@
 name: "Checkout Repository"
+description: "Checkout the repository"
 
 runs:
   using: "composite"

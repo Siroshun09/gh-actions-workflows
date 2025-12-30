@@ -35,13 +35,10 @@ jobs:
           fetch-depth: 0
       - name: Fetch all tags
         run: git fetch --force --tags
-      - name: "Set up Go"
-        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+      - uses: Siroshun09/gh-actions-workflows/.github/actions/go-setup@v1
         with:
-          go-version-file: ${{ inputs.working-dir }}/go.mod
-          cache: ${{ inputs.enable-cache }}
-          cache-dependency-path: |
-            ${{ inputs.working-dir }}/go.sum
+          enable-cache: ${{ inputs.enable-cache }}
+          working-dir: ${{ inputs.working-dir }}
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6.4.0
         with:

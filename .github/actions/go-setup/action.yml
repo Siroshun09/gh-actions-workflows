@@ -1,0 +1,26 @@
+name: Setup Go
+description: Setup Go environment for building, testing, or linting
+
+inputs:
+  enable-cache:
+    description: "Enable caching for Go modules"
+    required: false
+    default: "true"
+  go-version:
+    description: Go version to set up (falls back to go.mod if not specified)
+    required: false
+  working-dir:
+    description: "Working directory"
+    required: false
+    default: "."
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Set up Go"
+      uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+      with:
+        go-version: ${{ inputs.go-version }}
+        cache: ${{ inputs.enable-cache }}
+        cache-dependency-path: |
+          ${{ inputs.working-dir }}/go.sum
