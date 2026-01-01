@@ -17,6 +17,9 @@ on:
       go-filepath:
         type: string
         required: true
+      binary-name:
+        type: string
+        required: false
       target-os:
         type: string
         description: |
@@ -33,7 +36,7 @@ on:
         required: false
       output-filepath:
         type: string
-        required: true
+        required: false
       package-name:
         required: false
         type: string
@@ -60,13 +63,38 @@ jobs:
           enable-cache: ${{ inputs.enable-cache }}
           go-version: ${{ inputs.go-version }}
           working-dir: ${{ inputs.working-dir }}
+      - name: "Generate output filepath"
+        id: output-filepath
+        shell: bash
+        run: |
+          if [ -n "${{ inputs.output-filepath }}" ]; then
+            echo "value=$RUNNER_TEMP/bin/${{ inputs.output-filepath }}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          
+          OS="${{ runner.os }}"
+          if [ -n "${{ inputs.target-os }}" ]; then
+            OS="${{ inputs.target-os }}"
+          fi
+
+          EXT=""
+          if [ "$OS" = "windows" ]; then
+            EXT=".exe"
+          fi
+
+          if [ -n "${{ inputs.binary-name }}" ]; then
+            echo "value=$RUNNER_TEMP/bin/${{ inputs.binary-name }}$EXT" >> "$GITHUB_OUTPUT"
+          else
+            echo "Error: Either output-filepath or binary-name must be specified" >&2
+            exit 1
+          fi
       - uses: Siroshun09/gh-actions-workflows/.github/actions/go-build@v1
         with:
           build-arguments: ${{ inputs.build-arguments }}
           go-filepath: ${{ inputs.go-filepath }}
           target-os: ${{ inputs.target-os }}
           target-arch: ${{ inputs.target-arch }}
-          output-filepath: ${{ inputs.output-filepath }}
+          output-filepath: ${{ steps.output-filepath.outputs.value }}
           working-dir: ${{ inputs.working-dir }}
       - name: "Generate artifact name"
         id: artifact-name
@@ -91,4 +119,4 @@ jobs:
         continue-on-error: true
         with:
           name: ${{ steps.artifact-name.outputs.value }}
-          path: ${{ inputs.working-dir }}/${{ inputs.output-filepath }}
+          path: ${{ steps.output-filepath.outputs.value }}
