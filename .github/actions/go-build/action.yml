@@ -43,11 +43,11 @@ runs:
       shell: bash
       run: |
         if [ -n "${{ inputs.target-os }}" ]; then
-          GOOS=${{ inputs.target-os }}
+          export GOOS=${{ inputs.target-os }}
         fi
 
         if [ -n "${{ inputs.target-arch }}" ]; then
-          GOARCH=${{ inputs.target-arch }}
+          export GOARCH=${{ inputs.target-arch }}
         fi
 
         go ${{ inputs.build-arguments }} -o ${{ inputs.output-filepath }} ${{ inputs.go-filepath }}
