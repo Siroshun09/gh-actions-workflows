@@ -119,6 +119,8 @@ jobs:
           fi
       - name: "Upload release file"
         if: inputs.tag-name != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh release upload ${{ inputs.tag-name }} ${{ steps.params.outputs.release-filepath }}
       - name: "Upload artifact"
