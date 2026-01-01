@@ -26,7 +26,7 @@ on:
         default: "."
 
 jobs:
-  build:
+  lint:
     runs-on: ${{ inputs.os }}
     steps:
       - uses: Siroshun09/gh-actions-workflows/.github/actions/checkout@v1
