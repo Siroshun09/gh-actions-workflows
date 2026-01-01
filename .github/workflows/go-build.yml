@@ -48,7 +48,7 @@ on:
         default: "."
       go-version:
         required: false
-        type: string  
+        type: string
 
 jobs:
   build:
@@ -68,10 +68,27 @@ jobs:
           target-arch: ${{ inputs.target-arch }}
           output-filepath: ${{ inputs.output-filepath }}
           working-dir: ${{ inputs.working-dir }}
+      - name: "Generate artifact name"
+        id: artifact-name
+        if: ${{ inputs.upload-artifacts }}
+        shell: bash
+        run: |
+          OS="${{ runner.os }}"
+          ARCH="${{ runner.arch }}"
+          
+          if [ -n "${{ inputs.target-os }}" ]; then
+            OS="${{ inputs.target-os }}"
+          fi
+          
+          if [ -n "${{ inputs.target-arch }}" ]; then
+            ARCH="${{ inputs.target-arch }}"
+          fi
+          
+          echo "value=${{ inputs.package-name }}-${OS}-${ARCH}" >> "$GITHUB_OUTPUT"
       - name: "Upload artifacts"
         if: ${{ inputs.upload-artifacts }}
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         continue-on-error: true
         with:
-          name: ${{ inputs.package-name }}-${{ runner.os }}-${{ runner.arch }}
+          name: ${{ steps.artifact-name.outputs.value }}
           path: ${{ inputs.working-dir }}/${{ inputs.output-filepath }}
