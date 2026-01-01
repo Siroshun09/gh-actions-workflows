@@ -1,0 +1,53 @@
+name: Go Build
+description: Build binary from Go source
+
+inputs:
+  build-arguments:
+    description: |
+      The arguments to pass to go command.
+      Defaults to "build".
+    default: "build"
+    required: false
+  go-filepath:
+    description: |
+      The path to the Go main source file to build.
+    required: true
+  target-os:
+    description: |
+      The target operating system for the build.
+      If specified, this value will be set to GOOS environment variable.
+      See https://go.dev/doc/install/source#environment
+    required: false
+  target-arch:
+    description: |
+      The target architecture for the build.
+      If specified, this value will be set to GOARCH environment variable.
+      See https://go.dev/doc/install/source#environment
+    required: false
+  output-filepath:
+    description: |
+      The path to the output binary.
+    required: true
+  working-dir:
+    description: |
+      The path of working directory.
+      Defaults to the current directory.
+    required: false
+    default: "."
+
+runs:
+  using: composite
+  steps:
+    - name: "Build"
+      working-directory: ${{ inputs.working-dir }}
+      shell: bash
+      run: |
+        if [ -n "${{ inputs.target-os }}" ]; then
+          GOOS=${{ inputs.target-os }}
+        fi
+
+        if [ -n "${{ inputs.target-arch }}" ]; then
+          GOARCH=${{ inputs.target-arch }}
+        fi
+
+        go ${{ inputs.build-arguments }} -o ${{ inputs.output-filepath }} ${{ inputs.go-filepath }}

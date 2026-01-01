@@ -17,6 +17,20 @@ on:
       go-filepath:
         type: string
         required: true
+      target-os:
+        type: string
+        description: |
+          The target operating system for the build.
+          This value will be set to GOOS environment variable.
+          See https://go.dev/doc/install/source#environment
+        required: false
+      target-arch:
+        type: string
+        description: |
+          The target architecture for the build.
+          This value will be set to GOARCH environment variable.
+          See https://go.dev/doc/install/source#environment
+        required: false
       output-filepath:
         type: string
         required: true
@@ -46,10 +60,14 @@ jobs:
           enable-cache: ${{ inputs.enable-cache }}
           go-version: ${{ inputs.go-version }}
           working-dir: ${{ inputs.working-dir }}
-      - name: "Build"
-        working-directory: ${{ inputs.working-dir }}
-        run: |
-          go ${{ inputs.build-arguments }} -o ${{ inputs.output-filepath }} ${{ inputs.go-filepath }}
+      - uses: Siroshun09/gh-actions-workflows/.github/actions/go-build@v1
+        with:
+          build-arguments: ${{ inputs.build-arguments }}
+          go-filepath: ${{ inputs.go-filepath }}
+          target-os: ${{ inputs.target-os }}
+          target-arch: ${{ inputs.target-arch }}
+          output-filepath: ${{ inputs.output-filepath }}
+          working-dir: ${{ inputs.working-dir }}
       - name: "Upload artifacts"
         if: ${{ inputs.upload-artifacts }}
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
