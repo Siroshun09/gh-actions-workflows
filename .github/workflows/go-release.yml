@@ -1,0 +1,129 @@
+name: Go Release
+on:
+  workflow_call:
+    inputs:
+      os:
+        type: string
+        required: false
+        default: "ubuntu-latest"
+      enable-cache:
+        type: boolean
+        required: false
+        default: true
+      build-arguments:
+        type: string
+        required: false
+        default: "build"
+      go-version:
+        required: false
+        type: string
+      go-filepath:
+        type: string
+        required: true
+      binary-name:
+        type: string
+        required: true
+      target-os:
+        type: string
+        description: |
+          The target operating system for the build.
+          This value will be set to GOOS environment variable.
+          See https://go.dev/doc/install/source#environment
+        required: false
+      target-arch:
+        type: string
+        description: |
+          The target architecture for the build.
+          This value will be set to GOARCH environment variable.
+          See https://go.dev/doc/install/source#environment
+        required: false
+      working-dir:
+        required: false
+        type: string
+        default: "."
+      tag-name:
+        required: true
+        type: string
+
+jobs:
+  build-and-upload:
+    runs-on: ${{ inputs.os }}
+    steps:
+      - uses: Siroshun09/gh-actions-workflows/.github/actions/checkout@v1
+      - uses: Siroshun09/gh-actions-workflows/.github/actions/go-setup@v1
+        with:
+          enable-cache: ${{ inputs.enable-cache }}
+          go-version: ${{ inputs.go-version }}
+          working-dir: ${{ inputs.working-dir }}
+      - name: "Generate params"
+        id: params
+        shell: bash
+        run: |
+          BINARY_DIR="$RUNNER_TEMP/bin"
+          RELEASE_DIR="$RUNNER_TEMP/release"
+          
+          OS="${{ runner.os }}"
+          ARCH="${{ runner.arch }}"
+          
+          if [ -n "${{ inputs.target-os }}" ]; then
+            OS="${{ inputs.target-os }}"
+          fi
+          
+          if [ -n "${{ inputs.target-arch }}" ]; then
+            ARCH="${{ inputs.target-arch }}"
+          fi
+
+          BINARY_EXT=""
+          RELEASE_EXT=".tar.gz"
+          IS_ZIP=false
+          if [ "$OS" = "windows" ]; then
+            BINARY_EXT=".exe"
+            RELEASE_EXT=".zip"
+            IS_ZIP=true
+          fi
+          
+          BINARY_FILENAME=${{ inputs.binary-name }}$BINARY_EXT
+          RELEASE_FILENAME=${{ inputs.binary-name }}-$OS-$ARCH$RELEASE_EXT
+
+          {
+            echo "binary-dir=$BINARY_DIR"
+            echo "release-dir=$RELEASE_DIR"
+            echo "binary-filename=$BINARY_FILENAME"
+            echo "binary-filepath=$BINARY_DIR/$BINARY_FILENAME"
+            echo "release-name=$RELEASE_FILENAME"
+            echo "release-filepath=$RELEASE_DIR/$RELEASE_FILENAME"
+            echo "is-zip=$IS_ZIP"
+          } >> "$GITHUB_OUTPUT"
+      - name: "Prepare directories"
+        shell: bash
+        run: |
+          mkdir -p "${{ steps.params.outputs.binary-dir }}"
+          mkdir -p "${{ steps.params.outputs.release-dir }}"
+      - name: "Build binary"
+        uses: Siroshun09/gh-actions-workflows/.github/actions/go-build@v1
+        with:
+          build-arguments: ${{ inputs.build-arguments }}
+          go-filepath: ${{ inputs.go-filepath }}
+          target-os: ${{ inputs.target-os }}
+          target-arch: ${{ inputs.target-arch }}
+          output-filepath: ${{ steps.params.outputs.binary-filepath }}
+          working-dir: ${{ inputs.working-dir }}
+      - name: "Create release file"
+        shell: bash
+        working-directory: ${{ steps.params.outputs.binary-dir }}
+        run: |
+          if [[ "${{ steps.params.outputs.is-zip }}" == "true" ]]; then
+            zip "${{ steps.params.outputs.release-filepath }}" ${{ steps.params.outputs.binary-filename }}
+          else
+            tar czvf "${{ steps.params.outputs.release-filepath }}" ${{ steps.params.outputs.binary-filename }}
+          fi
+      - name: "Upload release file"
+        if: inputs.tag-name != ''
+        run: |
+          gh release upload ${{ inputs.tag-name }} ${{ steps.params.outputs.release-filepath }}
+      - name: "Upload artifact"
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        continue-on-error: true
+        with:
+          name: ${{ steps.params.outputs.release-name }}
+          path: ${{ steps.params.outputs.release-dir }}
