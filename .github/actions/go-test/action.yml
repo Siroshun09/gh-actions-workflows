@@ -50,7 +50,7 @@ runs:
         GOTESTSUM_DIR="$RUNNER_TEMP/gotestsum"
         GOTESTSUM_BIN_DIR="$GOTESTSUM_DIR/bin"
         GOTESTSUM_BIN="$GOTESTSUM_BIN_DIR/gotestsum"
-        GOTESTSUM_DOWNLOAD_NAME="gotestsum_$GOTESTSUM_VERSION_linux_amd64.tar.gz"
+        GOTESTSUM_DOWNLOAD_NAME="gotestsum_${GOTESTSUM_VERSION}_linux_amd64.tar.gz"
         
         mkdir -p "$GOTESTSUM_BIN_DIR"
         
