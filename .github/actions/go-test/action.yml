@@ -10,7 +10,6 @@ inputs:
     description: |
       The version of gotestsum (https://github.com/gotestyourself/gotestsum/releases) to use.
     required: false
-    default: "1.13.0"
   gotestsum-arguments:
     description: |
       The arguments to pass to gotestsum command.
@@ -44,14 +43,18 @@ runs:
       shell: bash
       if: inputs.upload-results == 'true'
       run: |
+        if [ -z "$GOTESTSUM_VERSION" ]; then
+          GOTESTSUM_VERSION="1.13.0"
+        fi
+
         GOTESTSUM_DIR="$RUNNER_TEMP/gotestsum"
         GOTESTSUM_BIN_DIR="$GOTESTSUM_DIR/bin"
         GOTESTSUM_BIN="$GOTESTSUM_BIN_DIR/gotestsum"
-        GOTESTSUM_DOWNLOAD_NAME="gotestsum_${{ inputs.gotestsum-version }}_linux_amd64.tar.gz"
+        GOTESTSUM_DOWNLOAD_NAME="gotestsum_$GOTESTSUM_VERSION_linux_amd64.tar.gz"
         
         mkdir -p "$GOTESTSUM_BIN_DIR"
         
-        gh release download v${{ inputs.gotestsum-version }} \
+        gh release download "v$GOTESTSUM_VERSION" \
           --repo gotestyourself/gotestsum \
           --pattern "$GOTESTSUM_DOWNLOAD_NAME" \
           --dir "$GOTESTSUM_DIR"
@@ -60,6 +63,7 @@ runs:
         chmod +x "$GOTESTSUM_BIN"
         echo "bin=$GOTESTSUM_BIN" > "$GITHUB_OUTPUT"
       env:
+        GOTESTSUM_VERSION: ${{ inputs.gotestsum-version }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
     - name: "Test"
       id: test
