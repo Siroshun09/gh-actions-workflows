@@ -27,38 +27,54 @@ env:
   TAG: ${{ inputs.tag }}
 
 jobs:
-  # Runs without secrets, so invalid input fails before the approval prompt.
-  check:
+  # Resolves the commit without running any code from the target repository,
+  # so its output cannot be influenced by the build.
+  resolve:
     runs-on: ubuntu-latest
     permissions:
       contents: read
     outputs:
-      sha: ${{ steps.sha.outputs.sha }}
+      sha: ${{ steps.resolve.outputs.sha }}
     steps:
-      - name: Check inputs
+      - id: resolve
         env:
           NAME: ${{ inputs.repository }}
+          JAVA_VERSION: ${{ inputs.java-version }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [[ ! "$NAME" =~ ^[A-Za-z0-9._-]+$ ]] || [[ ! "$TAG" =~ ^[0-9A-Za-z][0-9A-Za-z._-]*$ ]]; then
-            echo "::error::Invalid repository or tag"
+          if [[ ! "$NAME" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || [[ ! "$TAG" =~ ^[0-9A-Za-z][0-9A-Za-z._-]*$ ]] || [[ ! "$JAVA_VERSION" =~ ^[0-9]+$ ]]; then
+            echo "::error::Invalid repository, tag or java-version"
             exit 1
           fi
-          if [ "$(gh api "repos/$REPOSITORY" --jq .visibility)" != "public" ]; then
-            echo "::error::$REPOSITORY is not a public repository"
+          # full_name also rejects repositories that were renamed or transferred away (API redirects).
+          if [ "$(gh api "repos/$REPOSITORY" --jq '"\(.full_name) \(.visibility) \(.fork)"')" != "$REPOSITORY public false" ]; then
+            echo "::error::$REPOSITORY must be a public, non-fork repository owned by Siroshun09"
             exit 1
           fi
           if [ "$(gh api "repos/$REPOSITORY/releases/tags/$TAG" --jq .draft)" != "false" ]; then
             echo "::error::$TAG is not a published release of $REPOSITORY"
             exit 1
           fi
+          # The peeled entry (^{}) of an annotated tag sorts last.
+          SHA="$(git ls-remote "https://github.com/$REPOSITORY" "refs/tags/$TAG" "refs/tags/$TAG^{}" | tail -n 1 | cut -f 1)"
+          if [[ ! "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Could not resolve $TAG"
+            exit 1
+          fi
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "Publishing $REPOSITORY $TAG ($SHA)" >> "$GITHUB_STEP_SUMMARY"
+
+  publish:
+    needs: resolve
+    runs-on: ubuntu-latest
+    environment: maven-central
+    permissions: {}
+    steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ env.REPOSITORY }}
-          ref: refs/tags/${{ inputs.tag }}
+          ref: ${{ needs.resolve.outputs.sha }}
           persist-credentials: false
-      - id: sha
-        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Set up JDK ${{ inputs.java-version }}
         uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
@@ -67,7 +83,9 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
+          # Do not share caches with a job that holds the signing key.
           cache-disabled: true
+      # Runs before any secret is written. It prevents mistakes; it is not a security check.
       - name: Check version
         run: |
           chmod +x ./gradlew
@@ -80,29 +98,6 @@ jobs:
             echo "::error::Snapshot versions cannot be published"
             exit 1
           fi
-          echo "Publishing $REPOSITORY $TAG ($(git rev-parse HEAD))" >> "$GITHUB_STEP_SUMMARY"
-
-  publish:
-    needs: check
-    runs-on: ubuntu-latest
-    environment: maven-central
-    permissions: {}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: ${{ env.REPOSITORY }}
-          ref: ${{ needs.check.outputs.sha }}
-          persist-credentials: false
-      - name: Set up JDK ${{ inputs.java-version }}
-        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
-        with:
-          java-version: ${{ inputs.java-version }}
-          distribution: temurin
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
-        with:
-          # Do not share caches with a job that holds the signing key.
-          cache-disabled: true
       - name: Configure signing and credentials
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
@@ -123,6 +118,4 @@ jobs:
             echo "mavenCentralPortal.publishingType=AUTOMATIC"
           } >> "${GRADLE_USER_HOME:-$HOME/.gradle}/gradle.properties"
       - name: Publish
-        run: |
-          chmod +x ./gradlew
-          ./gradlew --no-daemon uploadToMavenCentralPortal
+        run: ./gradlew --no-daemon uploadToMavenCentralPortal
