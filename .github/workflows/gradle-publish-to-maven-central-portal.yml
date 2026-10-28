@@ -41,8 +41,12 @@ jobs:
         env:
           TAG: ${{ github.ref_name }}
         run: |
+          if [ "$GITHUB_EVENT_NAME" != "release" ] || [ "$GITHUB_REF_TYPE" != "tag" ]; then
+            echo "::error::Only a published release on a tag can be published"
+            exit 1
+          fi
           chmod +x ./gradlew
-          VERSION="$(./gradlew -q properties --property version --no-configuration-cache | sed -n 's/^version: //p')"
+          VERSION="$(./gradlew -q --no-daemon properties --property version --no-configuration-cache | sed -n 's/^version: //p')"
           if [ "$VERSION" != "$TAG" ]; then
             echo "::error::Project version ($VERSION) does not match the tag ($TAG)"
             exit 1
@@ -72,4 +76,4 @@ jobs:
           } >> "${GRADLE_USER_HOME:-$HOME/.gradle}/gradle.properties"
       - name: Publish
         working-directory: ${{ inputs.working-dir }}
-        run: ./gradlew uploadToMavenCentralPortal
+        run: ./gradlew --no-daemon uploadToMavenCentralPortal
