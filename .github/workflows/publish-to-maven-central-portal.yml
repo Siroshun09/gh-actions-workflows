@@ -1,5 +1,5 @@
 name: Publish to Maven Central Portal
-run-name: Publish Siroshun09/${{ inputs.repository }} ${{ inputs.tag }}
+run-name: Publish Siroshun09/${{ inputs.repository }} ${{ inputs.tag || '(latest release)' }}
 on:
   workflow_dispatch:
     inputs:
@@ -16,8 +16,8 @@ on:
           - mcmsgdef
           - Serialization
       tag:
-        description: Release tag to publish (must equal the project version)
-        required: true
+        description: Release tag to publish (must equal the project version). Defaults to the latest release.
+        required: false
         type: string
       java-version:
         description: Java version to build with
@@ -31,7 +31,6 @@ concurrency:
 
 env:
   REPOSITORY: Siroshun09/${{ inputs.repository }}
-  TAG: ${{ inputs.tag }}
 
 jobs:
   # Resolves the commit without running any code from the target repository,
@@ -42,13 +41,18 @@ jobs:
       contents: read
     outputs:
       sha: ${{ steps.resolve.outputs.sha }}
+      tag: ${{ steps.resolve.outputs.tag }}
     steps:
       - id: resolve
         env:
           NAME: ${{ inputs.repository }}
+          TAG: ${{ inputs.tag }}
           JAVA_VERSION: ${{ inputs.java-version }}
           GH_TOKEN: ${{ github.token }}
         run: |
+          if [ -z "$TAG" ]; then
+            TAG="$(gh api "repos/$REPOSITORY/releases/latest" --jq .tag_name)"
+          fi
           if [[ ! "$NAME" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || [[ ! "$TAG" =~ ^[0-9A-Za-z][0-9A-Za-z._-]*$ ]] || [[ ! "$JAVA_VERSION" =~ ^[0-9]+$ ]]; then
             echo "::error::Invalid repository, tag or java-version"
             exit 1
@@ -68,7 +72,10 @@ jobs:
             echo "::error::Could not resolve $TAG"
             exit 1
           fi
-          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          {
+            echo "sha=$SHA"
+            echo "tag=$TAG"
+          } >> "$GITHUB_OUTPUT"
           echo "Publishing $REPOSITORY $TAG ($SHA)" >> "$GITHUB_STEP_SUMMARY"
 
   publish:
@@ -76,6 +83,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: maven-central
     permissions: {}
+    env:
+      TAG: ${{ needs.resolve.outputs.tag }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
