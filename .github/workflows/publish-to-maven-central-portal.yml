@@ -1,0 +1,137 @@
+name: Publish to Maven Central Portal
+run-name: Publish Siroshun09/${{ inputs.repository }} ${{ inputs.tag || '(latest release)' }}
+on:
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: Repository under Siroshun09 to publish
+        required: true
+        type: choice
+        # Only repositories that publish to Maven Central. Their build runs next to the signing key.
+        options:
+          - Codec4J
+          - ConfigAPI
+          - Event4J
+          - jfun
+          - mcmsgdef
+          - Serialization
+      tag:
+        description: Release tag to publish (must equal the project version). Defaults to the latest release.
+        required: false
+        type: string
+      java-version:
+        description: Java version to build with
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: publish-to-maven-central-portal-${{ inputs.repository }}
+
+env:
+  REPOSITORY: Siroshun09/${{ inputs.repository }}
+
+jobs:
+  # Resolves the commit without running any code from the target repository,
+  # so its output cannot be influenced by the build.
+  resolve:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      sha: ${{ steps.resolve.outputs.sha }}
+      tag: ${{ steps.resolve.outputs.tag }}
+    steps:
+      - id: resolve
+        env:
+          NAME: ${{ inputs.repository }}
+          TAG: ${{ inputs.tag }}
+          JAVA_VERSION: ${{ inputs.java-version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -z "$TAG" ]; then
+            TAG="$(gh api "repos/$REPOSITORY/releases/latest" --jq .tag_name)"
+          fi
+          if [[ ! "$NAME" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || [[ ! "$TAG" =~ ^[0-9A-Za-z][0-9A-Za-z._-]*$ ]] || [[ ! "$JAVA_VERSION" =~ ^[0-9]+$ ]]; then
+            echo "::error::Invalid repository, tag or java-version"
+            exit 1
+          fi
+          # full_name also rejects repositories that were renamed or transferred away (API redirects).
+          if [ "$(gh api "repos/$REPOSITORY" --jq '"\(.full_name) \(.visibility) \(.fork)"')" != "$REPOSITORY public false" ]; then
+            echo "::error::$REPOSITORY must be a public, non-fork repository owned by Siroshun09"
+            exit 1
+          fi
+          if [ "$(gh api "repos/$REPOSITORY/releases/tags/$TAG" --jq .draft)" != "false" ]; then
+            echo "::error::$TAG is not a published release of $REPOSITORY"
+            exit 1
+          fi
+          # The peeled entry (^{}) of an annotated tag sorts last.
+          SHA="$(git ls-remote "https://github.com/$REPOSITORY" "refs/tags/$TAG" "refs/tags/$TAG^{}" | tail -n 1 | cut -f 1)"
+          if [[ ! "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Could not resolve $TAG"
+            exit 1
+          fi
+          {
+            echo "sha=$SHA"
+            echo "tag=$TAG"
+          } >> "$GITHUB_OUTPUT"
+          echo "Publishing $REPOSITORY $TAG ($SHA)" >> "$GITHUB_STEP_SUMMARY"
+
+  publish:
+    needs: resolve
+    runs-on: ubuntu-latest
+    environment: maven-central
+    permissions: {}
+    env:
+      TAG: ${{ needs.resolve.outputs.tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ env.REPOSITORY }}
+          ref: ${{ needs.resolve.outputs.sha }}
+          persist-credentials: false
+      - name: Set up JDK ${{ inputs.java-version }}
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          java-version: ${{ inputs.java-version }}
+          distribution: temurin
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          # Do not share caches with a job that holds the signing key.
+          cache-disabled: true
+      # Runs before any secret is written. It prevents mistakes; it is not a security check.
+      - name: Check version
+        run: |
+          chmod +x ./gradlew
+          VERSION="$(./gradlew -q --no-daemon properties --property version --no-configuration-cache | sed -n 's/^version: //p')"
+          if [ "$VERSION" != "$TAG" ]; then
+            echo "::error::Project version ($VERSION) does not match the tag ($TAG)"
+            exit 1
+          fi
+          if [[ "$VERSION" == *-SNAPSHOT ]]; then
+            echo "::error::Snapshot versions cannot be published"
+            exit 1
+          fi
+      - name: Configure signing and credentials
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          PORTAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_PORTAL_USERNAME }}
+          PORTAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PORTAL_PASSWORD }}
+        run: |
+          printf '%s\n' "$GPG_PRIVATE_KEY" | gpg --batch --import
+          KEY_ID="$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr/ { print $10; exit }')"
+          umask 077
+          mkdir -p "${GRADLE_USER_HOME:-$HOME/.gradle}"
+          {
+            echo "signing.gnupg.executable=gpg"
+            echo "signing.gnupg.keyName=$KEY_ID"
+            echo "signing.gnupg.passphrase=$GPG_PASSPHRASE"
+            echo "mavenCentralPortal.username=$PORTAL_USERNAME"
+            echo "mavenCentralPortal.password=$PORTAL_PASSWORD"
+            echo "mavenCentralPortal.publishingType=AUTOMATIC"
+          } >> "${GRADLE_USER_HOME:-$HOME/.gradle}/gradle.properties"
+      - name: Publish
+        run: ./gradlew --no-daemon uploadToMavenCentralPortal

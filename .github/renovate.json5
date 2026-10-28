@@ -2,5 +2,14 @@
   $schema: 'https://docs.renovatebot.com/renovate-schema.json',
   extends: [
     'github>Siroshun09/renovate-config//github-actions/renovate.json5',
-  ]
+  ],
+  packageRules: [
+    {
+      description: 'Review updates to the workflow that holds the signing key',
+      matchFileNames: [
+        '.github/workflows/publish-to-maven-central-portal.yml',
+      ],
+      automerge: false,
+    },
+  ],
 }
