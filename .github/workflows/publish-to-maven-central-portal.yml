@@ -4,9 +4,17 @@ on:
   workflow_dispatch:
     inputs:
       repository:
-        description: Repository name under Siroshun09 (e.g. Codec4J)
+        description: Repository under Siroshun09 to publish
         required: true
-        type: string
+        type: choice
+        # Only repositories that publish to Maven Central. Their build runs next to the signing key.
+        options:
+          - Codec4J
+          - ConfigAPI
+          - Event4J
+          - jfun
+          - mcmsgdef
+          - Serialization
       tag:
         description: Release tag to publish (must equal the project version)
         required: true
