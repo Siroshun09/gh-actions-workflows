@@ -82,7 +82,7 @@ runs:
           go test -mod=readonly ${{ inputs.additional-arguments }} ./...
         fi
     - name: "Upload Results"
-      uses: mikepenz/action-junit-report@4a26df3e2ae132254ba12a53f65a388d0961e786 # v6.7.0
+      uses: mikepenz/action-junit-report@a16be3a69023e9bd7e748ede768b3282ea7b30ce # v6.7.1
       if: ${{ inputs.upload-results == 'true' && (success() || failure()) }}
       continue-on-error: true
       with:
